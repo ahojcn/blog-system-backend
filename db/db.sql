@@ -1,3 +1,4 @@
+
 drop database if exists blog_system;
 create database blog_system;
 use blog_system;
@@ -18,3 +19,5 @@ create table tag_table(
   tag_id int not null primary key auto_increment,
   tag_name varchar(50)
 );
+
+
