@@ -67,6 +67,7 @@ namespace blog_system {
         printf("insert error, %s\n", mysql_error(_mysql));
         return false;
       }
+      printf("insert ok\n");
 
       return true;
     }
@@ -108,18 +109,68 @@ namespace blog_system {
     }
 
     bool SelectOne(int32_t blog_id, Json::Value *blog) {
-      
+      char sql[1024] = {0};
+      sprintf(sql, "select blog_id, title, content, tag_id, create_time from blog_table where blog_id = %d", blog_id);
+
+      int ret = mysql_query(_mysql, sql);
+      if (ret != 0) {
+        printf("select one error, %s\n", mysql_error(_mysql));
+        return false;
+      }
+
+      MYSQL_RES *result = mysql_store_result(_mysql);
+      int rows = mysql_num_rows(result);
+      if (rows != 1) {
+        printf("查找到的博客不止有1条，实际有%d\n", rows);
+        return false;
+      }
+
+      MYSQL_ROW row = mysql_fetch_row(result);
+      (*blog)["blog_id"] = atoi(row[0]);
+      (*blog)["title"] = row[1];
+      (*blog)["content"] = row[2];
+      (*blog)["tag_id"] = atoi(row[3]);
+      (*blog)["create_time"] = row[4];
       return true;
     }
 
 
     bool Update(const Json::Value &blog) {
+      // 对正文部分进行转义，防止出现 SQL 注入
+      const std::string &content = blog["content"].asString();
+      // char *to = new char[content.size() * 2 + 1];  // 文档要求 to 的长度为 from.size * 2 + 1
+      std::unique_ptr<char> to(new char[content.size() * 2 + 1]);
+      
+      mysql_real_escape_string(_mysql, to.get(), content.c_str(), content.size());
 
+      std::unique_ptr<char> sql(new char[content.size() * 2 + 4096]);
+
+      sprintf(sql.get()
+          , "update blog_table set title='%s', content='%s', tag_id=%d where blog_id = %d"
+          , blog["title"].asCString()
+          , to.get()
+          , blog["tag_id"].asInt()
+          , blog["blog_id"].asInt());
+
+      int ret = mysql_query(_mysql, sql.get());
+      if (ret != 0) {
+        printf("更新博客失败，%s\n", mysql_error(_mysql));
+        return false;
+      }
+
+      printf("更新博客成功\n");
       return true;
     }
 
     bool Delete(int32_t blog_id) {
+      char sql[1024 * 4] = {0};
+      sprintf(sql, "delete from blog_table where blog_id = %d", blog_id);
 
+      int ret = mysql_query(_mysql, sql);
+      if (ret != 0) {
+        printf("删除博客失败, %s\n", mysql_error(_mysql));
+        return false;
+      }
       return true;
     }
 
@@ -130,21 +181,66 @@ namespace blog_system {
 
   class TagTable {
   public:
-    TagTable() {}
+    TagTable(MYSQL *mysql) : _mysql(mysql) {}
 
     bool Insert(const Json::Value &tag) {
+      char sql[1024 * 4] = {0};
+      sprintf(sql
+          , "insert into tag_table values(null, '%s')", tag["tag_name"].asCString());
+
+      int ret = mysql_query(_mysql, sql);
+      if (ret != 0) {
+        printf("插入标签失败，%s\n", mysql_error(_mysql));
+        return false;
+      }
+
+      printf("插入 tag 成功\n");
+
       return true;
     }
 
     bool Delete(int32_t tag_id) {
+      char sql[1024 * 4] = {0};
+      sprintf(sql
+          , "delete from tag_table where tag_id = %d", tag_id);
+
+      int ret = mysql_query(_mysql, sql);
+      if (ret != 0) {
+        printf("删除标签失败, %s\n", mysql_error(_mysql));
+        return false;
+      }
+
+      printf("删除标签成功\n");
       return true;
     }
 
     bool SelectAll(Json::Value *tags) {
+      char sql[1024 * 4] = {0};
+      sprintf(sql
+          , "select tag_id, tag_name from tag_table");
+
+      int ret = mysql_query(_mysql, sql);
+      if (ret != 0) {
+        printf("查找所有标签失败，%s\n", mysql_error(_mysql));
+        return false;
+      }
+
+      MYSQL_RES *result = mysql_store_result(_mysql);
+      int rows = mysql_num_rows(result);
+      for (int i = 0; i < rows; ++i) {
+        MYSQL_ROW row = mysql_fetch_row(result);
+        Json::Value tag;
+        tag["tag_id"] = atoi(row[0]);
+        tag["tag_name"] = row[1];
+        tags->append(tag);
+      }
+
+      printf("查找标签成功，共找到%d\n", rows);
       return true;
     }
 
   private:
+    MYSQL *_mysql;
   };
 
 }  // end of namespace blog_system
