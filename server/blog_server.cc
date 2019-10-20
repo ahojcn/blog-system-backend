@@ -59,12 +59,14 @@ int main() {
       resp_json["msg"] = "blog insert failed!";
       resp.status = 500;
       resp.set_content(writer.write(resp_json), "application/json");
+      return;
     }
     // 4. 构造一个正确的相应
     printf("插入成功！\n");
     resp_json["ok"] = true;
     resp_json["msg"] = "insert ok!";
     resp.set_content(writer.write(resp_json), "application/json");
+    return;
   });
   //// 查看所有博客列表
   server.Get("/blog", [&blog_table](const Request& req, Response& resp) {
@@ -85,6 +87,7 @@ int main() {
     }
     // 3. 构造响应结果
     resp.set_content(writer.write(resp_json), "application/json");
+    return;
   });
   //// 查看某个博客
   server.Get(R"(/blog/(\d+))", [&blog_table](const Request& req, Response& resp) {

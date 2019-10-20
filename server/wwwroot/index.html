@@ -1,11 +1,141 @@
-<html>
-  <head>
-    <meta http-equiv="content-type" content="text/html;charset=utf-8">
-  </head>
+<!DOCTYPE html>
+<html lang="en">
 
-  <body>
-    <h1>
-      我是 index.html
-    </h1>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- vue -->
+    <script src="https://cdn.bootcss.com/vue/2.6.10/vue.min.js"></script>
+    <!-- axios -->
+    <script src="https://cdn.bootcss.com/axios/0.19.0-beta.1/axios.min.js"></script>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <title>Document</title>
+</head>
+
+<body>
+
+    <div id="app" style="padding-left: 30px; padding-right: 30px;">
+        <!-- header -->
+        <div>
+            <el-menu :default-active="active_index" mode="horizontal" @select="handleSelect">
+                <el-menu-item index="1">{{blog_name}}</el-menu-item>
+                <el-submenu index="2">
+                    <template slot="title">我的工作台</template>
+                    <el-menu-item index="2-1">选项1</el-menu-item>
+                    <el-menu-item index="2-2">选项2</el-menu-item>
+                    <el-menu-item index="2-3">选项3</el-menu-item>
+                    <el-submenu index="2-4">
+                        <template slot="title">选项4</template>
+                        <el-menu-item index="2-4-1">选项1</el-menu-item>
+                        <el-menu-item index="2-4-2">选项2</el-menu-item>
+                        <el-menu-item index="2-4-3">选项3</el-menu-item>
+                    </el-submenu>
+                </el-submenu>
+                <el-menu-item index="3" disabled>消息中心</el-menu-item>
+            </el-menu>
+        </div>
+
+        <!-- main -->
+        <div style="padding-top: 20px;">
+            <el-row :gutter="24">
+                <el-col :span="8">
+                    <el-card :body-style="{ padding: '0px' }">
+                        <img src="https://i.loli.net/2019/10/20/qNAJuCStLhfkGXE.jpg" style="width: 400px;">
+                        <div style="padding: 14px;">
+                            <span>{{blog_name}}</span>
+                        </div>
+                        <el-tag style="margin: 5px;" v-for="tag in tag_list" :key="tag.tag_id">
+                            {{tag.tag_name}}</el-tag>
+                    </el-card>
+                </el-col>
+                <el-col :span="16">
+                    <div v-for="blog in blog_list" :key="blog.blog_id" style="padding-bottom: 20px;">
+                        <el-card shadow="hover">
+                            <div slot="header">
+                                <span>{{blog.title}}</span>
+
+                                <!-- TODO: 点击按钮展示更多博客 -->
+                                <el-button style="float: right; padding: 3px 0" type="text"
+                                    @click="show_blog_detail = !show_blog_detail">瞅瞅</el-button>
+                            </div>
+                            <div>
+                                <el-tag type="success">{{blog.create_time}}</el-tag>
+                                <el-tag>{{blog.tag_id}}</el-tag>
+                            </div>
+                        </el-card>
+                    </div>
+                </el-col>
+            </el-row>
+        </div>
+
+        <!-- TODO：展示更多博客内容 -->
+        <!-- 博客详细内容 -->
+        <el-drawer :title="blog.title" size="50%" :visible.sync="show_blog_detail">
+            <span>我来啦!</span>
+        </el-drawer>
+    </div>
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                // 导航栏的默认选项
+                active_index: "1",
+                // 博客名
+                blog_name: "ahojcn的博客",
+                // 博客列表
+                blog_list: [],
+                // 标签列表
+                tag_list: [],
+                // 是否显示更多博客内容
+                show_blog_detail: false,
+            },
+            computed: {
+            },
+            created() {
+                this.getAllBlogList();
+                this.getAllTagList();
+            },
+            methods: {
+                // 服务器错误提示
+                serverError() {
+                    this.$notify.error({
+                        title: '错误',
+                        message: '服务器走神了',
+                        duration: 0,
+                        showClose: false,
+                    });
+                },
+                // 处理导航栏点击
+                handleSelect(key, keyPath) {
+                    console.log(key, keyPath);
+                },
+                // 获取所有博客
+                getAllBlogList() {
+                    axios.get('/blog').then(res => {
+                        this.blog_list = res.data;
+                    }).catch(err => {
+                        console.log(err);
+                        this.serverError();
+                    });
+                },
+                // 获取所有标签
+                getAllTagList() {
+                    axios.get('/tag').then(res => {
+                        this.tag_list = res.data;
+                    }).catch(err => {
+                        console.log(err);
+                        this.serverError();
+                    });
+                },
+            },
+        });
+    </script>
+
+</body>
+
 </html>
